@@ -10,6 +10,8 @@
 // Quartz
 #import <QuartzCore/QuartzCore.h>
 
+#import <objc/runtime.h>
+
 // Numerics (TWMessageBarStyleSheet)
 CGFloat const kTWMessageBarStyleSheetMessageBarAlpha = 0.96f;
 
@@ -45,6 +47,9 @@ static UIColor *kTWDefaultMessageBarStyleSheetInfoBackgroundColor = nil;
 static UIColor *kTWDefaultMessageBarStyleSheetErrorStrokeColor = nil;
 static UIColor *kTWDefaultMessageBarStyleSheetSuccessStrokeColor = nil;
 static UIColor *kTWDefaultMessageBarStyleSheetInfoStrokeColor = nil;
+
+//hide statusBar
+static BOOL isHidden = NO;
 
 @protocol TWMessageViewDelegate;
 
@@ -145,11 +150,41 @@ static UIColor *kTWDefaultMessageBarStyleSheetInfoStrokeColor = nil;
     return self;
 }
 
+- (BOOL)prefersStatusBarHidden {
+    return isHidden;
+}
+
 #pragma mark - Public
 
 - (void)showMessageWithTitle:(NSString *)title description:(NSString *)description type:(TWMessageBarMessageType)type
 {
     [self showMessageWithTitle:title description:description type:type duration:[TWMessageBarManager durationForMessageType:type] callback:nil];
+}
+
+- (void)showMessageWithTitle:(NSString *)title description:(NSString *)description viewController:(UIViewController *)vc type:(TWMessageBarMessageType)type {
+    if ([vc respondsToSelector:@selector(prefersStatusBarHidden)]) {
+        Method newMethod = class_getInstanceMethod([self class], @selector(prefersStatusBarHidden));
+        Method oldMethod = class_getInstanceMethod([vc class], @selector(prefersStatusBarHidden));
+        
+        if (newMethod && oldMethod) {
+            method_exchangeImplementations(oldMethod, newMethod);
+        }
+        
+        isHidden = YES;
+        [UIView animateWithDuration:0.25 animations:^{
+            [vc performSelector:@selector(setNeedsStatusBarAppearanceUpdate)];
+        } completion:^(BOOL finished) {
+            [self showMessageWithTitle:title description:description type:type duration:[TWMessageBarManager durationForMessageType:type] callback:^{
+                isHidden = NO;
+                [vc performSelector:@selector(setNeedsStatusBarAppearanceUpdate)];
+                if (newMethod && oldMethod) {
+                    method_exchangeImplementations(oldMethod, newMethod);
+                }
+            }];
+        }];
+    }else{
+        [self showMessageWithTitle:title description:description type:type duration:[TWMessageBarManager durationForMessageType:type] callback:nil];
+    }
 }
 
 - (void)showMessageWithTitle:(NSString *)title description:(NSString *)description type:(TWMessageBarMessageType)type callback:(void (^)())callback
@@ -254,8 +289,8 @@ static UIColor *kTWDefaultMessageBarStyleSheetInfoStrokeColor = nil;
             self.messageVisible = NO;
             [messageView removeFromSuperview];
             
-            if (itemHit)
-            {
+//            if (itemHit)
+//            {
                 if ([messageView.callbacks count] > 0)
                 {
                     id obj = [messageView.callbacks objectAtIndex:0];
@@ -264,7 +299,7 @@ static UIColor *kTWDefaultMessageBarStyleSheetInfoStrokeColor = nil;
                         ((void (^)())obj)();
                     }
                 }
-            }
+//            }
             
             if([self.messageBarQueue count] > 0)
             {

@@ -131,8 +131,13 @@ static UIColor *kTWMesssageBarDemoControllerButtonColor = nil;
 
 - (void)errorButtonPressed:(id)sender
 {
+//    [[TWMessageBarManager sharedInstance] showMessageWithTitle:kStringMessageBarErrorTitle
+//                                                   description:kStringMessageBarErrorMessage
+//                                                          type:TWMessageBarMessageTypeError];
+    
     [[TWMessageBarManager sharedInstance] showMessageWithTitle:kStringMessageBarErrorTitle
                                                    description:kStringMessageBarErrorMessage
+                                                viewController:self
                                                           type:TWMessageBarMessageTypeError];
 }
 

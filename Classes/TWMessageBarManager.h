@@ -71,6 +71,8 @@ typedef enum {
  */
 - (void)showMessageWithTitle:(NSString *)title description:(NSString *)description type:(TWMessageBarMessageType)type;
 
+- (void)showMessageWithTitle:(NSString *)title description:(NSString *)description viewController:(UIViewController *)vc type:(TWMessageBarMessageType)type;
+
 /**
  *  Shows a message with the supplied title, description, type (dictates color, stroke and icon) & callback block.
  *
